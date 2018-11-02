@@ -3,61 +3,18 @@ let palette = [];
 let bg;
 function setup() {
   //960,720;
-  createCanvas(500, 500);
-  bg = qpColor("bg", "dead");
+  createCanvas(screen.width, screen.height);
+  bg = qpColor("bg", "#fff");
   background(bg);
   mid = {
     x: width / 2,
     y: height / 2
   };
-  noLoop();
+  //noLoop();
   setupSeed();
-  angleMode(DEGREES);
 }
 
-function draw() {
-  translate(mid.x, mid.y);
-  /* idea:
-  draw an oroboros-like thing, where the "head" is very bright,
-  and it gets progressively darker as it gets back to the tail, 
-  where the tail is completely dark
-  */
-  const segments = 36;
-  const degrees = 360;
-  const headColor = color("red");
-  //const strokeColor = color("black");
-  strokeWeight(1);
-  stroke(color("black"));
-  fill(headColor);
-  const maxW = 50;
-  const maxH = 100;
-
-  for (let segmentIndex = 0; segmentIndex < segments; segmentIndex++) {
-    let w = maxW;
-    let h = (maxH / segments) * segmentIndex;
-    const angle = (degrees / segments) * segmentIndex;
-
-    push();
-    // copy the head color, make the alpha lower
-    // the closer we are to the tail
-    const currentColor = color(headColor);
-    const alpha = (255 / segments) * segmentIndex;
-    currentColor.setAlpha(alpha);
-    fill(currentColor);
-
-    console.log({
-      w,
-      h,
-      angle,
-      segmentIndex,
-      currentColor,
-      alpha
-    });
-    rotate(angle);
-    rect(0, 0, w, h);
-    pop();
-  }
-}
+function draw() {}
 
 function setupSeed() {
   const fromLocation = new URL(document.location).searchParams.get("seed");
