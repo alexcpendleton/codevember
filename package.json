@@ -1,0 +1,14 @@
+{
+  "name": "codevember",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Alex Pendleton <alexcpendleton@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "browser-sync start -w -s --directory"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "browser-sync": "^2.26.3"
+  }
+}
