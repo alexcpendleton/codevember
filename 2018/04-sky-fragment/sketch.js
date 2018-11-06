@@ -1,28 +1,17 @@
 let mid = {};
 let palette = [];
 let bg;
-function setup() {
-  //960,720;
-  createCanvas(700, 700);
-  bg = color("#fff");
-  background(bg);
-  mid = {
-    x: width / 2,
-    y: height / 2
-  };
-  noLoop();
-  setupSeed();
-  pixelDensity(1);
-}
-
+const TWO_PI = Math.PI * 2;
 function draw() {
+  let canvas = document.getElementById("canvas");
   // choose an "impact point"
   // choose a bunch of random points going out from there around a circle
   // then connect them with lines?
   // "fill" the connected area with transparency so one can see layers underneath (later)
   // maybe make the connections more jagged
   new Layer({
-    impactPosition: mid
+    impactPosition: mid,
+    surface: canvas
   }).draw();
 }
 
@@ -34,59 +23,48 @@ class Layer {
         impactPosition: { x: 0, y: 0 },
         fragment: {
           amount: {
-            min: 30,
-            max: 50
+            min: 200,
+            max: 200
           },
           length: {
-            min: 50,
-            max: 100
-          },
-          stroke: () => {
-            strokeWeight(1);
-            stroke(color("#000"));
-          },
-          fill: () => {
-            fill(color(0, 0, 0, 0));
-          }
-        },
-        sky: {
-          stroke: () => {
-            noStroke();
-          },
-          fill: () => {
-            fill(color("#dead00"));
+            min: 100,
+            max: 300
           }
         }
       },
       options
     );
-    this.surface = createGraphics(width, height);
+    this.ctx = this.surface.getContext("2d");
   }
   draw() {
     this.drawSky();
     this.drawFragments();
-    image(this.surface, 0, 0);
+    //image(this.surface, 0, 0);
   }
   drawSky() {
-    this.surface.fill("blue");
-    this.surface.rect(0, 0, width, height);
+    const width = this.surface.width;
+    const height = this.surface.height;
+    this.ctx.fillStyle = "blue";
+    this.ctx.fillRect(0, 0, width, height);
+    this.ctx.save();
   }
   drawFragments() {
     const { x, y } = { ...this.impactPosition };
     const { min, max } = { ...this.fragment.length };
-    //this.fragment.stroke();
-    //this.fragment.fill();
-    const alphaC = color(0, 0);
-    //this.surface.set(x, y, alphaC);
-    // debugger;
-    var ctx = this.surface.canvas.getContext("2d");
-    ctx.beginPath();
-    //ctx.fillMode = "rgb(0,0,0,0)";
-    ctx.ellipse(x, y, min / 5, min / 5, 0, TWO_PI, false);
 
+    // debugger;
+    var ctx = this.ctx; //this.surface.getContext("2d");
+    ctx.beginPath();
+    ctx.fillMode = "rgb(255,0,0,0)";
+    ctx.ellipse(x, y, min / 5, min / 5, 0, Math.PI * 2, false);
+    ctx.globalCompositeOperation = "destination-out";
     const amounts = this.fragment.amount;
-    const amountOfPoints = random(amounts.min, amounts.max);
-    const points = this.polygonPoints(amountOfPoints);
+    const amountOfPoints = this.randomInt(amounts.min, amounts.max);
+    const mid = { x: this.surface.width / 2, y: this.surface.height / 2 };
+    const points = this.polygonPoints(amountOfPoints, {
+      x: mid.x,
+      y: mid.y
+    });
     let amountDrawn = 0;
     points.map(point => {
       if (amountDrawn !== 0) {
@@ -95,106 +73,47 @@ class Layer {
       ctx.moveTo(point.x, point.y);
       amountDrawn++;
     });
+    ctx.lineTo(points[0].x, points[0].y);
     ctx.fill();
     ctx.stroke();
 
-    for (let i = 0; i < width; i++) {
-      for (let j = 0; j < height; j++) {
-        if (ctx.isPointInPath(i, j)) {
-          this.surface.set(i, j, alphaC);
-          //console.log({ i, j });
-        }
-      }
-    }
+    // for (let i = 0; i < width; i++) {
+    //   for (let j = 0; j < height; j++) {
+    //     if (ctx.isPointInPath(i, j)) {
+    //       this.surface.set(i, j, alphaC);
+    //       //console.log({ i, j });
+    //     }
+    //   }
+    // }
     // console.log(fragmentPath);
     //ctx.clip();
     //debugger;
     // this.surface.fill(alphaC);
     // this.surface.ellipse(x, y, max);
-    this.surface.updatePixels();
+    //this.surface.updatePixels();
     console.log(this.surface);
   }
   polygonPoints(numberOfPoints, { x = 0, y = 0, ao = 0 } = {}) {
     var angle = TWO_PI / numberOfPoints;
     const results = [];
     const { min, max } = { ...this.fragment.length };
+    let last = undefined;
+    let mid = (max + min) / 2;
     for (var a = 0; a < TWO_PI; a += angle) {
-      let radius = random(min, max);
-      var sx = x + cos(a + ao) * radius;
-      var sy = y + sin(a + ao) * radius;
+      let low = min;
+      let high = max;
+
+      let radius = this.randomInt(low, high);
+      last = radius;
+      var sx = x + Math.cos(a + ao) * radius;
+      var sy = y + Math.sin(a + ao) * radius;
       results.push({ x: sx, y: sy });
     }
     return results;
   }
-}
-
-function setupSeed() {
-  const fromLocation = new URL(document.location).searchParams.get("seed");
-  if (fromLocation) {
-    window.seed = parseFloat(fromLocation);
-  } else {
-    window.seed = ceil(random(0, 1000000));
+  randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
   }
-  console.log(window.seed);
-  randomSeed(window.seed);
 }
 
-function randomFromArray(arr) {
-  const i = Math.floor(random(0, arr.length));
-  return arr[i];
-}
-
-function qp(name, def, customParser) {
-  let value = new URL(document.location).searchParams.get(name);
-  if (value === null || value === undefined || value === "") {
-    value = def;
-  }
-  if (customParser) {
-    value = customParser(value);
-  } else {
-    if (!isNaN(value)) {
-      value = parseFloat(value);
-    }
-  }
-  console.log("qp", name, value, def);
-  return value;
-}
-function qpColor(name, def) {
-  return qp(name, def, v => {
-    if (v) {
-      return "#" + v;
-    }
-    return v;
-  });
-}
-
-function mouseReleased() {
-  if (mouseReleased.isCurrentlyPaused) {
-    console.log("resumed");
-    mouseReleased.isCurrentlyPaused = false;
-    return loop();
-  }
-  mouseReleased.isCurrentlyPaused = true;
-  noLoop();
-  console.log("paused");
-}
-
-function ca(c, a) {
-  const result = color(c);
-  if (a !== undefined) {
-    result.setAlpha(a);
-  }
-  return result;
-}
-
-function randomColorFromPalette() {
-  let x = randomFromArray(palette);
-  x = x.levels;
-  let r = color(x[0], x[1], x[2]);
-  return r;
-}
-
-function randomFromArray(arr) {
-  const i = Math.floor(random(0, arr.length));
-  return arr[i];
-}
+draw();
